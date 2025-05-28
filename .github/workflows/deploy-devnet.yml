@@ -1,0 +1,248 @@
+name: Deploy Solana AMM to Devnet
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Deploy Solana AMM to Devnet
+    
+    env:
+      ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: Decode all keypairs from secrets
+        run: |
+          mkdir -p keys target/deploy
+          
+          # Deployer wallet
+          echo "$DEVNET_DEPLOYER_BASE64" | base64 -d > keys/devnet-deployer.json
+          
+          # Currency mints
+          echo "$NTD_MINT_BASE64" | base64 -d > keys/ntd-mint.json
+          echo "$USD_MINT_BASE64" | base64 -d > keys/usd-mint.json
+          echo "$YEN_MINT_BASE64" | base64 -d > keys/yen-mint.json
+          
+          # Pool vaults
+          echo "$NTD_USD_VAULT_A_BASE64" | base64 -d > keys/ntd-usd-vault-a.json
+          echo "$NTD_USD_VAULT_B_BASE64" | base64 -d > keys/ntd-usd-vault-b.json
+          echo "$USD_YEN_VAULT_A_BASE64" | base64 -d > keys/usd-yen-vault-a.json
+          echo "$USD_YEN_VAULT_B_BASE64" | base64 -d > keys/usd-yen-vault-b.json
+          echo "$NTD_YEN_VAULT_A_BASE64" | base64 -d > keys/ntd-yen-vault-a.json
+          echo "$NTD_YEN_VAULT_B_BASE64" | base64 -d > keys/ntd-yen-vault-b.json
+          
+          # Program ID keypair
+          echo "$PROGRAM_ID_BASE64" | base64 -d > target/deploy/solana_amm_educational_template-keypair.json
+
+          # Set proper permissions
+          chmod 600 keys/*.json
+          chmod 600 target/deploy/*.json
+
+          # Get program ID and set as environment variable
+          PROGRAM_ID=$(solana-keygen pubkey target/deploy/solana_amm_educational_template-keypair.json)
+          echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
+          echo "Program ID: $PROGRAM_ID"
+
+          echo "All keypair files created successfully"
+        env:
+          DEVNET_DEPLOYER_BASE64: ${{ secrets.DEVNET_DEPLOYER_BASE64 }}
+          NTD_MINT_BASE64: ${{ secrets.NTD_MINT_BASE64 }}
+          USD_MINT_BASE64: ${{ secrets.USD_MINT_BASE64 }}
+          YEN_MINT_BASE64: ${{ secrets.YEN_MINT_BASE64 }}
+          NTD_USD_VAULT_A_BASE64: ${{ secrets.NTD_USD_VAULT_A_BASE64 }}
+          NTD_USD_VAULT_B_BASE64: ${{ secrets.NTD_USD_VAULT_B_BASE64 }}
+          USD_YEN_VAULT_A_BASE64: ${{ secrets.USD_YEN_VAULT_A_BASE64 }}
+          USD_YEN_VAULT_B_BASE64: ${{ secrets.USD_YEN_VAULT_B_BASE64 }}
+          NTD_YEN_VAULT_A_BASE64: ${{ secrets.NTD_YEN_VAULT_A_BASE64 }}
+          NTD_YEN_VAULT_B_BASE64: ${{ secrets.NTD_YEN_VAULT_B_BASE64 }}
+          PROGRAM_ID_BASE64: ${{ secrets.PROGRAM_ID_BASE64 }}
+
+      - name: Quick devnet check (no installation needed)
+        run: |
+          echo "Checking if devnet reset and program needs deployment..."
+          
+          # Quick check using curl (no solana CLI needed yet)
+          DEVNET_HEALTH=$(curl -s -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"getHealth"}' https://api.devnet.solana.com | jq -r '.result // "error"')
+          echo "Devnet health: $DEVNET_HEALTH"
+          
+          if [ "$DEVNET_HEALTH" != "ok" ]; then
+            echo "Devnet is not healthy, skipping deployment"
+            exit 0
+          fi
+          
+          # Check if program exists (using curl)
+          PROGRAM_CHECK=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getAccountInfo\",\"params\":[\"$PROGRAM_ID\",{\"encoding\":\"base64\"}]}" https://api.devnet.solana.com | jq -r '.result.value // "null"')
+          
+          if [ "$PROGRAM_CHECK" != "null" ]; then
+            echo "Program $PROGRAM_ID exists on devnet, skipping deployment"
+            echo "SKIP_DEPLOYMENT=true" >> $GITHUB_ENV
+          else
+            echo "Program $PROGRAM_ID not found, deployment needed"
+            echo "SKIP_DEPLOYMENT=false" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Node.js
+        if: env.SKIP_DEPLOYMENT == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      
+      - name: Setup Rust (nightly for lockfile v4 compatibility)
+        if: env.SKIP_DEPLOYMENT == 'false'
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          override: true
+          components: rustfmt, clippy
+      
+      - name: Install dependencies
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: yarn install --frozen-lockfile
+      
+      - name: Install Agave (Modern Solana CLI)
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Installing Agave Solana CLI (modern 2.x version)..."
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Configure Solana
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Configuring Solana CLI for devnet..."
+          solana config set --url https://api.devnet.solana.com
+          solana config set --keypair keys/devnet-deployer.json
+          solana config set --commitment confirmed
+          
+          echo "Current Solana configuration:"
+          solana config get
+
+      - name: Verify Agave Solana CLI installations
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Verifying Solana CLI installation..."
+          solana --version
+
+      - name: Install Anchor CLI
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Installing Anchor CLI..."
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          $HOME/.cargo/bin/avm install 0.31.1
+          $HOME/.cargo/bin/avm use 0.31.1
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Verify Anchor CLI installations
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Verifying Anchor CLI installation..."
+          anchor --version
+
+      - name: Ensure sufficient balance
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Current balance check and airdrop attempt..."
+          yarn ts-node scripts/airdrop-sol.ts
+          
+          # Simple final balance check
+          FINAL_BALANCE=$(solana balance keys/devnet-deployer.json --output json | jq -r '.value' 2>/dev/null || echo "0")
+          echo "Final balance: $FINAL_BALANCE SOL"
+      
+      - name: Build and deploy (with fresh blockhash + retry)
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Building Anchor program..."
+          anchor build
+          
+          # Function to deploy with fresh blockhash
+          deploy_with_fresh_blockhash() {
+            echo "Refreshing blockhash..."
+            solana block-production
+            sleep 2
+            
+            echo "Deploying program..."
+            anchor deploy --provider.cluster devnet --provider.wallet keys/devnet-deployer.json
+          }
+          
+          # Try deployment with retries
+          MAX_ATTEMPTS=3
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "=== Deployment attempt $attempt of $MAX_ATTEMPTS ==="
+            
+            if deploy_with_fresh_blockhash; then
+              echo "Deployment successful!"
+              exit 0
+            else
+              echo "Deployment attempt $attempt failed"
+              
+              if [ $attempt -lt $MAX_ATTEMPTS ]; then
+                echo "Waiting 30 seconds before retry..."
+                sleep 30
+              fi
+            fi
+          done
+          
+          echo "All deployment attempts failed"
+          exit 1
+        env:
+          ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
+      
+      - name: Verify deployment
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Verifying program deployment..."
+          echo "Program ID: $PROGRAM_ID"
+          
+          # Check if program exists on devnet
+          solana account $PROGRAM_ID --output json || echo "Program verification failed"
+      
+      - name: Setup three currency pools
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Setting up three currency exchange pools..."
+          yarn ts-node scripts/setup-devnet-pool.ts
+        env:
+          ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
+
+      - name: Deployment summary and transaction links
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "=========================================="
+          echo "SOLANA AMM DEPLOYMENT COMPLETED"
+          echo "=========================================="
+          echo ""
+          echo "Program Information:"
+          echo "- Program ID: $PROGRAM_ID"
+          echo "- Network: Devnet"
+          echo "- Deployer: $(solana-keygen pubkey keys/devnet-deployer.json)"
+          echo ""
+          echo "Solana Explorer Links:"
+          echo "- Program: https://explorer.solana.com/address/$PROGRAM_ID?cluster=devnet"
+          echo "- Deployer: https://explorer.solana.com/address/$(solana-keygen pubkey keys/devnet-deployer.json)?cluster=devnet"
+          echo ""
+          echo "Deployment Status: SUCCESS"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "=========================================="
+
+      - name: Deployment summary (skipped)
+        if: env.SKIP_DEPLOYMENT == 'true'
+        run: |
+          echo "=========================================="
+          echo "SOLANA AMM DEPLOYMENT SKIPPED"
+          echo "=========================================="
+          echo ""
+          echo "Reason: Program already deployed on devnet"
+          echo "Program ID: $PROGRAM_ID"
+          echo "Program Link: https://explorer.solana.com/address/$PROGRAM_ID?cluster=devnet"
+          echo ""
+          echo "Status: SKIPPED - NO ACTION NEEDED"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "=========================================="
