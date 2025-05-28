@@ -42,9 +42,6 @@ jobs:
           echo "$NTD_YEN_VAULT_A_BASE64" | base64 -d > keys/ntd-yen-vault-a.json
           echo "$NTD_YEN_VAULT_B_BASE64" | base64 -d > keys/ntd-yen-vault-b.json
           
-          # Program ID keypair (for deployment)
-          echo "$PROGRAM_ID_BASE64" | base64 -d > target/deploy/solana_amm_educational_template-keypair.json
-
           # Set proper permissions
           chmod 600 keys/*.json
           chmod 600 target/deploy/*.json
@@ -155,6 +152,14 @@ jobs:
       - name: Build and deploy (with fresh blockhash + retry)
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
+
+          # Program ID keypair (for deployment)
+          echo "$PROGRAM_ID_BASE64" | base64 -d > target/deploy/solana_amm_educational_template-keypair.json
+
+          echo "Verifying fixed program ID..."
+          PROGRAM_ID=$(solana-keygen pubkey target/deploy/solana_swap_pool_demo-keypair.json)
+          echo "Fixed Program ID: $PROGRAM_ID"
+
           echo "Building Anchor program..."
           anchor build
           
@@ -174,10 +179,10 @@ jobs:
             echo "=== Deployment attempt $attempt of $MAX_ATTEMPTS ==="
             
             if deploy_with_fresh_blockhash; then
-              echo "✅ Deployment successful!"
+              echo " Deployment successful!"
               exit 0
             else
-              echo "❌ Deployment attempt $attempt failed"
+              echo " Deployment attempt $attempt failed"
               
               if [ $attempt -lt $MAX_ATTEMPTS ]; then
                 echo "Waiting 30 seconds before retry..."
@@ -186,7 +191,7 @@ jobs:
             fi
           done
           
-          echo "❌ All deployment attempts failed"
+          echo " All deployment attempts failed"
           exit 1
         env:
           ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
