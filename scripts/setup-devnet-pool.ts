@@ -21,7 +21,7 @@ dotenv.config();
 
 // Updated IDL with pool_type parameter
 const IDL = {
-  "address": "2NnY6su4EvQTc1gtEaaGrpY6uUXcTkArAmFLTwPYnSFR",
+  "address": "6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2",
   "metadata": {
     "name": "solana_amm_educational_template",
     "version": "0.1.0",
@@ -510,7 +510,7 @@ async function setupThreeCurrencyPools() {
       "confirmed"
     );
 
-    const programId = new PublicKey("2NnY6su4EvQTc1gtEaaGrpY6uUXcTkArAmFLTwPYnSFR");
+    const programId = new PublicKey("6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2");
     
     console.log(`Deployer: ${deployerKeypair.publicKey.toString()}`);
     console.log(`Program ID: ${programId.toString()}`);
