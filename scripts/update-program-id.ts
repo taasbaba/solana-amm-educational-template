@@ -71,12 +71,10 @@ async function updateProgramId() {
     const newKeypair = Keypair.generate();
     const newProgramId = newKeypair.publicKey.toString();
     const secretKeyArray = Array.from(newKeypair.secretKey);
-    const base64SecretKey = Buffer.from(newKeypair.secretKey).toString('base64');
 
     console.log("NEW PROGRAM ID GENERATED:");
     console.log("========================");
     console.log(`Public Key: ${newProgramId}`);
-    console.log(`Base64 Secret: ${base64SecretKey}\n`);
 
     // 2. Update keys/program-id.json
     const programIdPath = "./keys/program-id.json";
@@ -87,6 +85,13 @@ async function updateProgramId() {
     }
     
     fs.writeFileSync(programIdPath, JSON.stringify(secretKeyArray, null, 2));
+    
+    // Generate base64 from the JSON file (like base64 -i keys/program-id.json | tr -d '\n')
+    const jsonContent = fs.readFileSync(programIdPath, 'utf8');
+    const base64SecretKey = Buffer.from(jsonContent).toString('base64');
+    
+    console.log(`Base64 Secret: ${base64SecretKey}\n`);
+
     console.log("UPDATED KEYPAIR FILE:");
     console.log("====================");
     console.log(`${programIdPath} - New keypair saved\n`);

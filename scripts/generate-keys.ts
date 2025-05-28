@@ -127,7 +127,10 @@ async function generateAllKeypairs() {
           keypair = Keypair.fromSecretKey(new Uint8Array(existingSecretKey));
           publicKey = keypair.publicKey.toString();
           secretKeyArray = existingSecretKey;
-          base64SecretKey = Buffer.from(new Uint8Array(existingSecretKey)).toString('base64');
+          
+          // Generate base64 from the JSON file (like base64 -i keys/x.json | tr -d '\n')
+          const jsonContent = fs.readFileSync(filepath, 'utf8');
+          base64SecretKey = Buffer.from(jsonContent).toString('base64');
           
           console.log(`INFO: Using existing ${config.filename}`);
           console.log(`   Public Key: ${publicKey}`);
@@ -143,10 +146,13 @@ async function generateAllKeypairs() {
         keypair = Keypair.generate();
         publicKey = keypair.publicKey.toString();
         secretKeyArray = Array.from(keypair.secretKey);
-        base64SecretKey = Buffer.from(keypair.secretKey).toString('base64');
         
-        // Force write to file
+        // Force write to file first
         fs.writeFileSync(filepath, JSON.stringify(secretKeyArray, null, 2));
+        
+        // Generate base64 from the JSON file (like base64 -i keys/x.json | tr -d '\n')
+        const jsonContent = fs.readFileSync(filepath, 'utf8');
+        base64SecretKey = Buffer.from(jsonContent).toString('base64');
         
         console.log(`GENERATED: ${config.filename}`);
         console.log(`   Public Key: ${publicKey}`);
