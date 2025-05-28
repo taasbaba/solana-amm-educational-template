@@ -1,6 +1,8 @@
 name: Deploy Solana AMM to Devnet
 
 on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour
   workflow_dispatch:
 
 jobs:
@@ -19,6 +21,11 @@ jobs:
         run: |
           mkdir -p keys target/deploy
           
+          # Set fixed program ID (no solana-keygen needed)
+          PROGRAM_ID="6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2"
+          echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
+          echo "Program ID: $PROGRAM_ID"
+          
           # Deployer wallet
           echo "$DEVNET_DEPLOYER_BASE64" | base64 -d > keys/devnet-deployer.json
           
@@ -35,17 +42,12 @@ jobs:
           echo "$NTD_YEN_VAULT_A_BASE64" | base64 -d > keys/ntd-yen-vault-a.json
           echo "$NTD_YEN_VAULT_B_BASE64" | base64 -d > keys/ntd-yen-vault-b.json
           
-          # Program ID keypair
+          # Program ID keypair (for deployment)
           echo "$PROGRAM_ID_BASE64" | base64 -d > target/deploy/solana_amm_educational_template-keypair.json
 
           # Set proper permissions
           chmod 600 keys/*.json
           chmod 600 target/deploy/*.json
-
-          # Get program ID and set as environment variable
-          PROGRAM_ID=$(solana-keygen pubkey target/deploy/solana_amm_educational_template-keypair.json)
-          echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
-          echo "Program ID: $PROGRAM_ID"
 
           echo "All keypair files created successfully"
         env:
@@ -111,7 +113,24 @@ jobs:
           echo "Installing Agave Solana CLI (modern 2.x version)..."
           sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
+      
+      - name: Install Anchor CLI
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Installing Anchor CLI..."
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          $HOME/.cargo/bin/avm install 0.31.1
+          $HOME/.cargo/bin/avm use 0.31.1
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Verify installations
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Verifying Solana CLI installation..."
+          solana --version
+          echo "Verifying Anchor CLI installation..."
+          anchor --version
+      
       - name: Configure Solana
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
@@ -122,28 +141,7 @@ jobs:
           
           echo "Current Solana configuration:"
           solana config get
-
-      - name: Verify Agave Solana CLI installations
-        if: env.SKIP_DEPLOYMENT == 'false'
-        run: |
-          echo "Verifying Solana CLI installation..."
-          solana --version
-
-      - name: Install Anchor CLI
-        if: env.SKIP_DEPLOYMENT == 'false'
-        run: |
-          echo "Installing Anchor CLI..."
-          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
-          $HOME/.cargo/bin/avm install 0.31.1
-          $HOME/.cargo/bin/avm use 0.31.1
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       
-      - name: Verify Anchor CLI installations
-        if: env.SKIP_DEPLOYMENT == 'false'
-        run: |
-          echo "Verifying Anchor CLI installation..."
-          anchor --version
-
       - name: Ensure sufficient balance
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
@@ -176,10 +174,10 @@ jobs:
             echo "=== Deployment attempt $attempt of $MAX_ATTEMPTS ==="
             
             if deploy_with_fresh_blockhash; then
-              echo "Deployment successful!"
+              echo "✅ Deployment successful!"
               exit 0
             else
-              echo "Deployment attempt $attempt failed"
+              echo "❌ Deployment attempt $attempt failed"
               
               if [ $attempt -lt $MAX_ATTEMPTS ]; then
                 echo "Waiting 30 seconds before retry..."
@@ -188,7 +186,7 @@ jobs:
             fi
           done
           
-          echo "All deployment attempts failed"
+          echo "❌ All deployment attempts failed"
           exit 1
         env:
           ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
@@ -206,7 +204,7 @@ jobs:
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
           echo "Setting up three currency exchange pools..."
-          yarn ts-node scripts/setup-devnet-pool.ts
+          yarn ts-node scripts/setup_three_pools.ts
         env:
           ANCHOR_PROVIDER_URL: https://api.devnet.solana.com
 
