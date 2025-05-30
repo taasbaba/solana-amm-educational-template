@@ -20,7 +20,7 @@ jobs:
       - name: Quick devnet check (no installation needed)
         run: |
           # Hardcoded Program ID for devnet check
-          PROGRAM_ID="6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2"
+          PROGRAM_ID="B6WsBQgwpFpQZMYLPt9groFwSjp2nKL7JBoTJASyEYb4"
           echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
           echo "Using hardcoded Program ID for devnet check: $PROGRAM_ID"
           
@@ -118,14 +118,6 @@ jobs:
           echo "$USD_MINT_BASE64" | base64 -d > keys/usd-mint.json
           echo "$YEN_MINT_BASE64" | base64 -d > keys/yen-mint.json
           
-          # Pool vaults
-          echo "$NTD_USD_VAULT_A_BASE64" | base64 -d > keys/ntd-usd-vault-a.json
-          echo "$NTD_USD_VAULT_B_BASE64" | base64 -d > keys/ntd-usd-vault-b.json
-          echo "$USD_YEN_VAULT_A_BASE64" | base64 -d > keys/usd-yen-vault-a.json
-          echo "$USD_YEN_VAULT_B_BASE64" | base64 -d > keys/usd-yen-vault-b.json
-          echo "$NTD_YEN_VAULT_A_BASE64" | base64 -d > keys/ntd-yen-vault-a.json
-          echo "$NTD_YEN_VAULT_B_BASE64" | base64 -d > keys/ntd-yen-vault-b.json
-          
           # Program ID keypair (BEFORE build)
           echo "$PROGRAM_ID_BASE64" | base64 -d > target/deploy/solana_amm_educational_template-keypair.json
 
@@ -157,12 +149,6 @@ jobs:
           NTD_MINT_BASE64: ${{ secrets.NTD_MINT_BASE64 }}
           USD_MINT_BASE64: ${{ secrets.USD_MINT_BASE64 }}
           YEN_MINT_BASE64: ${{ secrets.YEN_MINT_BASE64 }}
-          NTD_USD_VAULT_A_BASE64: ${{ secrets.NTD_USD_VAULT_A_BASE64 }}
-          NTD_USD_VAULT_B_BASE64: ${{ secrets.NTD_USD_VAULT_B_BASE64 }}
-          USD_YEN_VAULT_A_BASE64: ${{ secrets.USD_YEN_VAULT_A_BASE64 }}
-          USD_YEN_VAULT_B_BASE64: ${{ secrets.USD_YEN_VAULT_B_BASE64 }}
-          NTD_YEN_VAULT_A_BASE64: ${{ secrets.NTD_YEN_VAULT_A_BASE64 }}
-          NTD_YEN_VAULT_B_BASE64: ${{ secrets.NTD_YEN_VAULT_B_BASE64 }}
           PROGRAM_ID_BASE64: ${{ secrets.PROGRAM_ID_BASE64 }}
 
       - name: Ensure sufficient balance

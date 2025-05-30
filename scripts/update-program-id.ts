@@ -48,7 +48,55 @@ const UPDATE_TARGETS: UpdateTarget[] = [
     description: "setup-devnet-pool.ts programId constant",
     searchPattern: /(const\s+programId\s*=\s*new\s+PublicKey\s*\(\s*")([^"]+)("\s*\)\s*;)/g,
     replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
-  }
+  },
+
+  // 6. test-swap.ts - IDL address
+  {
+    filePath: "./tests/test-swap.ts",
+    description: "test-swap.ts IDL address",
+    searchPattern: /("address":\s*")([^"]+)(",)/g,
+    replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
+  },
+
+  // 7. test-swap.ts - programId constant
+  {
+    filePath: "./tests/test-swap.ts",
+    description: "test-swap.ts programId constant",
+    searchPattern: /(const\s+programId\s*=\s*new\s+PublicKey\s*\(\s*")([^"]+)("\s*\)\s*;)/g,
+    replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
+  },
+
+  // 8. test-add-liquidity.ts - IDL address
+  {
+    filePath: "./tests/test-add-liquidity.ts",
+    description: "test-add-liquidity.ts IDL address",
+    searchPattern: /("address":\s*")([^"]+)(",)/g,
+    replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
+  },
+
+  // 9. test-add-liquidity.ts - programId constant
+  {
+    filePath: "./tests/test-add-liquidity.ts",
+    description: "test-add-liquidity.ts programId constant",
+    searchPattern: /(const\s+programId\s*=\s*new\s+PublicKey\s*\(\s*")([^"]+)("\s*\)\s*;)/g,
+    replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
+  },
+
+  // 10. test-remove-liquidity.ts - IDL address
+  {
+    filePath: "./tests/test-remove-liquidity.ts",
+    description: "test-remove-liquidity.ts IDL address",
+    searchPattern: /("address":\s*")([^"]+)(",)/g,
+    replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
+  },
+
+  // 11. test-remove-liquidity.ts - programId constant
+  {
+    filePath: "./tests/test-remove-liquidity.ts",
+    description: "test-remove-liquidity.ts programId constant",
+    searchPattern: /(const\s+programId\s*=\s*new\s+PublicKey\s*\(\s*")([^"]+)("\s*\)\s*;)/g,
+    replaceTemplate: "$1{NEW_PROGRAM_ID}$3"
+  },
 ];
 
 interface UpdateResult {

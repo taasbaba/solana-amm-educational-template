@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint, MintTo, Burn};
 
-declare_id!("6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2");
+declare_id!("B6WsBQgwpFpQZMYLPt9groFwSjp2nKL7JBoTJASyEYb4");
 
 #[program]
 pub mod solana_amm_educational_template {
@@ -363,19 +363,25 @@ pub struct InitializePool<'info> {
     )]
     pub lp_mint: Account<'info, Mint>,
 
+    // FIXED: Vault A as PDA - no signer required
     #[account(
         init,
         payer = payer,
         token::mint = token_a_mint,
         token::authority = pool_authority,
+        seeds = [b"vault_a", token_a_mint.key().as_ref(), token_b_mint.key().as_ref()],
+        bump
     )]
     pub token_a_vault: Account<'info, TokenAccount>,
     
+    // FIXED: Vault B as PDA - no signer required
     #[account(
         init,
         payer = payer,
         token::mint = token_b_mint,
         token::authority = pool_authority,
+        seeds = [b"vault_b", token_a_mint.key().as_ref(), token_b_mint.key().as_ref()],
+        bump
     )]
     pub token_b_vault: Account<'info, TokenAccount>,
 
@@ -384,7 +390,7 @@ pub struct InitializePool<'info> {
         seeds = [b"pool_authority", token_a_mint.key().as_ref(), token_b_mint.key().as_ref()],
         bump
     )]
-    pub pool_authority: AccountInfo<'info>,
+    pub pool_authority: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -423,14 +429,18 @@ pub struct AddLiquidity<'info> {
     #[account(
         mut,
         constraint = pool_token_a_vault.mint == pool_state.token_a @ SwapError::InvalidTokenMint,
-        constraint = pool_token_a_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority
+        constraint = pool_token_a_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority,
+        seeds = [b"vault_a", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
+        bump
     )]
     pub pool_token_a_vault: Account<'info, TokenAccount>,
     
     #[account(
         mut,
         constraint = pool_token_b_vault.mint == pool_state.token_b @ SwapError::InvalidTokenMint,
-        constraint = pool_token_b_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority
+        constraint = pool_token_b_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority,
+        seeds = [b"vault_b", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
+        bump
     )]
     pub pool_token_b_vault: Account<'info, TokenAccount>,
 
@@ -445,7 +455,7 @@ pub struct AddLiquidity<'info> {
         seeds = [b"pool_authority", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
         bump
     )]
-    pub pool_authority: AccountInfo<'info>,
+    pub pool_authority: UncheckedAccount<'info>,
 
     pub user_authority: Signer<'info>,
     pub token_program: Program<'info, Token>,
@@ -481,14 +491,18 @@ pub struct RemoveLiquidity<'info> {
     #[account(
         mut,
         constraint = pool_token_a_vault.mint == pool_state.token_a @ SwapError::InvalidTokenMint,
-        constraint = pool_token_a_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority
+        constraint = pool_token_a_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority,
+        seeds = [b"vault_a", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
+        bump
     )]
     pub pool_token_a_vault: Account<'info, TokenAccount>,
     
     #[account(
         mut,
         constraint = pool_token_b_vault.mint == pool_state.token_b @ SwapError::InvalidTokenMint,
-        constraint = pool_token_b_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority
+        constraint = pool_token_b_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority,
+        seeds = [b"vault_b", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
+        bump
     )]
     pub pool_token_b_vault: Account<'info, TokenAccount>,
 
@@ -503,7 +517,7 @@ pub struct RemoveLiquidity<'info> {
         seeds = [b"pool_authority", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
         bump
     )]
-    pub pool_authority: AccountInfo<'info>,
+    pub pool_authority: UncheckedAccount<'info>,
 
     pub user_authority: Signer<'info>,
     pub token_program: Program<'info, Token>,
@@ -532,14 +546,18 @@ pub struct Swap<'info> {
     #[account(
         mut,
         constraint = pool_token_a_vault.mint == pool_state.token_a @ SwapError::InvalidTokenMint,
-        constraint = pool_token_a_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority
+        constraint = pool_token_a_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority,
+        seeds = [b"vault_a", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
+        bump
     )]
     pub pool_token_a_vault: Account<'info, TokenAccount>,
     
     #[account(
         mut,
         constraint = pool_token_b_vault.mint == pool_state.token_b @ SwapError::InvalidTokenMint,
-        constraint = pool_token_b_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority
+        constraint = pool_token_b_vault.owner == pool_authority.key() @ SwapError::InvalidVaultAuthority,
+        seeds = [b"vault_b", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
+        bump
     )]
     pub pool_token_b_vault: Account<'info, TokenAccount>,
 
@@ -548,7 +566,7 @@ pub struct Swap<'info> {
         seeds = [b"pool_authority", pool_state.token_a.as_ref(), pool_state.token_b.as_ref()],
         bump
     )]
-    pub pool_authority: AccountInfo<'info>,
+    pub pool_authority: UncheckedAccount<'info>,
 
     pub user_authority: Signer<'info>,
     pub token_program: Program<'info, Token>,

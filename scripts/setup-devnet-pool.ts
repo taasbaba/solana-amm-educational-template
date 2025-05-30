@@ -12,16 +12,16 @@ import {
   createMint,
   mintTo,
   createAccount,
+  getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import * as fs from "fs";
-import * as path from "fs";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// Updated IDL with pool_type parameter
+// Updated IDL matching your Rust program
 const IDL = {
-  "address": "6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2",
+  "address": "B6WsBQgwpFpQZMYLPt9groFwSjp2nKL7JBoTJASyEYb4",
   "metadata": {
     "name": "solana_amm_educational_template",
     "version": "0.1.0",
@@ -68,11 +68,47 @@ const IDL = {
         },
         {
           "name": "pool_token_a_vault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116, 95, 97]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.token_a",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.token_b",
+                "account": "PoolState"
+              }
+            ]
+          }
         },
         {
           "name": "pool_token_b_vault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116, 95, 98]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.token_a",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.token_b",
+                "account": "PoolState"
+              }
+            ]
+          }
         },
         {
           "name": "lp_mint",
@@ -172,12 +208,42 @@ const IDL = {
         {
           "name": "token_a_vault",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116, 95, 97]
+              },
+              {
+                "kind": "account",
+                "path": "token_a_mint"
+              },
+              {
+                "kind": "account",
+                "path": "token_b_mint"
+              }
+            ]
+          }
         },
         {
           "name": "token_b_vault",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116, 95, 98]
+              },
+              {
+                "kind": "account",
+                "path": "token_a_mint"
+              },
+              {
+                "kind": "account",
+                "path": "token_b_mint"
+              }
+            ]
+          }
         },
         {
           "name": "pool_authority",
@@ -222,229 +288,12 @@ const IDL = {
           "type": "u8"
         }
       ]
-    },
-    {
-      "name": "remove_liquidity",
-      "discriminator": [80, 85, 209, 72, 24, 206, 177, 108],
-      "accounts": [
-        {
-          "name": "pool_state",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108]
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_a",
-                "account": "PoolState"
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_b",
-                "account": "PoolState"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user_token_a",
-          "writable": true
-        },
-        {
-          "name": "user_token_b",
-          "writable": true
-        },
-        {
-          "name": "user_lp_token",
-          "writable": true
-        },
-        {
-          "name": "pool_token_a_vault",
-          "writable": true
-        },
-        {
-          "name": "pool_token_b_vault",
-          "writable": true
-        },
-        {
-          "name": "lp_mint",
-          "writable": true
-        },
-        {
-          "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121]
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_a",
-                "account": "PoolState"
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_b",
-                "account": "PoolState"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user_authority",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "lp_amount",
-          "type": "u64"
-        },
-        {
-          "name": "minimum_a_out",
-          "type": "u64"
-        },
-        {
-          "name": "minimum_b_out",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "swap",
-      "discriminator": [248, 198, 158, 145, 225, 117, 135, 200],
-      "accounts": [
-        {
-          "name": "pool_state",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108]
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_a",
-                "account": "PoolState"
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_b",
-                "account": "PoolState"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user_token_a",
-          "writable": true
-        },
-        {
-          "name": "user_token_b",
-          "writable": true
-        },
-        {
-          "name": "pool_token_a_vault",
-          "writable": true
-        },
-        {
-          "name": "pool_token_b_vault",
-          "writable": true
-        },
-        {
-          "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121]
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_a",
-                "account": "PoolState"
-              },
-              {
-                "kind": "account",
-                "path": "pool_state.token_b",
-                "account": "PoolState"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user_authority",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount_in",
-          "type": "u64"
-        },
-        {
-          "name": "minimum_amount_out",
-          "type": "u64"
-        },
-        {
-          "name": "a_to_b",
-          "type": "bool"
-        }
-      ]
     }
   ],
   "accounts": [
     {
       "name": "PoolState",
       "discriminator": [247, 237, 227, 245, 215, 195, 222, 70]
-    }
-  ],
-  "errors": [
-    {
-      "code": 6000,
-      "name": "InsufficientLiquidity",
-      "msg": "Insufficient liquidity in the pool"
-    },
-    {
-      "code": 6001,
-      "name": "InvalidAmount",
-      "msg": "Invalid amount provided"
-    },
-    {
-      "code": 6002,
-      "name": "SlippageExceeded",
-      "msg": "Slippage tolerance exceeded"
-    },
-    {
-      "code": 6003,
-      "name": "InvalidTokenMint",
-      "msg": "Invalid token mint"
-    },
-    {
-      "code": 6004,
-      "name": "InvalidVaultAuthority",
-      "msg": "Invalid vault authority"
-    },
-    {
-      "code": 6005,
-      "name": "InsufficientLpBalance",
-      "msg": "Insufficient LP token balance"
-    },
-    {
-      "code": 6006,
-      "name": "InvalidPoolType",
-      "msg": "Invalid pool type"
     }
   ],
   "types": [
@@ -488,14 +337,12 @@ interface CurrencyPool {
   tokenA: { name: string; symbol: string; keypair: Keypair; mint?: PublicKey };
   tokenB: { name: string; symbol: string; keypair: Keypair; mint?: PublicKey };
   poolType: number;
-  vaultA: Keypair;
-  vaultB: Keypair;
   initialLiquidity: { amountA: number; amountB: number };
 }
 
 async function setupThreeCurrencyPools() {
   try {
-    console.log("🌍 Setting up Three Currency Exchange Pools...");
+    console.log("Setting up Three Currency Exchange Pools...");
     console.log("===============================================");
 
     // 1. Load Wallet & RPC  
@@ -510,7 +357,7 @@ async function setupThreeCurrencyPools() {
       "confirmed"
     );
 
-    const programId = new PublicKey("6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2");
+    const programId = new PublicKey("B6WsBQgwpFpQZMYLPt9groFwSjp2nKL7JBoTJASyEYb4");
     
     console.log(`Deployer: ${deployerKeypair.publicKey.toString()}`);
     console.log(`Program ID: ${programId.toString()}`);
@@ -524,7 +371,7 @@ async function setupThreeCurrencyPools() {
       throw new Error("Insufficient SOL balance. Need at least 0.5 SOL for 3 pools deployment.");
     }
 
-    // 2. Define Three Currency Pools
+    // 2. Define Three Currency Pools with vault keypairs
     const currencyPools: CurrencyPool[] = [
       {
         name: "NTD/USD Stable Pool",
@@ -543,12 +390,6 @@ async function setupThreeCurrencyPools() {
           )
         },
         poolType: 1, // Stable pool - low fees for stable currency exchange
-        vaultA: Keypair.fromSecretKey(
-          new Uint8Array(JSON.parse(fs.readFileSync("./keys/ntd-usd-vault-a.json", "utf8")))
-        ),
-        vaultB: Keypair.fromSecretKey(
-          new Uint8Array(JSON.parse(fs.readFileSync("./keys/ntd-usd-vault-b.json", "utf8")))
-        ),
         initialLiquidity: { amountA: 3200000, amountB: 100000 } // ~32 NTD = 1 USD
       },
       {
@@ -568,12 +409,6 @@ async function setupThreeCurrencyPools() {
           )
         },
         poolType: 0, // Standard pool - normal AMM for USD/YEN
-        vaultA: Keypair.fromSecretKey(
-          new Uint8Array(JSON.parse(fs.readFileSync("./keys/usd-yen-vault-a.json", "utf8")))
-        ),
-        vaultB: Keypair.fromSecretKey(
-          new Uint8Array(JSON.parse(fs.readFileSync("./keys/usd-yen-vault-b.json", "utf8")))
-        ),
         initialLiquidity: { amountA: 100000, amountB: 15000000 } // ~1 USD = 150 YEN
       },
       {
@@ -593,18 +428,12 @@ async function setupThreeCurrencyPools() {
           )
         },
         poolType: 2, // Concentrated liquidity - better price discovery for direct NTD/YEN
-        vaultA: Keypair.fromSecretKey(
-          new Uint8Array(JSON.parse(fs.readFileSync("./keys/ntd-yen-vault-a.json", "utf8")))
-        ),
-        vaultB: Keypair.fromSecretKey(
-          new Uint8Array(JSON.parse(fs.readFileSync("./keys/ntd-yen-vault-b.json", "utf8")))
-        ),
         initialLiquidity: { amountA: 3200000, amountB: 15000000 } // ~32 NTD = 150 YEN
       }
     ];
 
     // 3. Create Token Mints
-    console.log("\n💰 Creating currency token mints...");
+    console.log("\nCreating currency token mints...");
     const uniqueTokens = new Map();
     
     for (const pool of currencyPools) {
@@ -620,10 +449,10 @@ async function setupThreeCurrencyPools() {
           pool.tokenA.keypair
         );
         uniqueTokens.set(pool.tokenA.symbol, pool.tokenA.mint);
-        console.log(`✅ ${pool.tokenA.symbol} Mint: ${pool.tokenA.mint.toString()}`);
+        console.log(`${pool.tokenA.symbol} Mint: ${pool.tokenA.mint.toString()}`);
       } else {
         pool.tokenA.mint = uniqueTokens.get(pool.tokenA.symbol);
-        console.log(`♻️ Reusing ${pool.tokenA.symbol} Mint: ${pool.tokenA.mint.toString()}`);
+        console.log(`Reusing ${pool.tokenA.symbol} Mint: ${pool.tokenA.mint.toString()}`);
       }
 
       // Create Token B if not exists
@@ -638,10 +467,10 @@ async function setupThreeCurrencyPools() {
           pool.tokenB.keypair
         );
         uniqueTokens.set(pool.tokenB.symbol, pool.tokenB.mint);
-        console.log(`✅ ${pool.tokenB.symbol} Mint: ${pool.tokenB.mint.toString()}`);
+        console.log(`${pool.tokenB.symbol} Mint: ${pool.tokenB.mint.toString()}`);
       } else {
         pool.tokenB.mint = uniqueTokens.get(pool.tokenB.symbol);
-        console.log(`♻️ Reusing ${pool.tokenB.symbol} Mint: ${pool.tokenB.mint.toString()}`);
+        console.log(`Reusing ${pool.tokenB.symbol} Mint: ${pool.tokenB.mint.toString()}`);
       }
     }
 
@@ -656,7 +485,7 @@ async function setupThreeCurrencyPools() {
     const program = new Program(IDL as any, provider);
 
     // 5. Setup Each Pool
-    console.log("\n🏊 Initializing currency exchange pools...");
+    console.log("\nInitializing currency exchange pools...");
     
     const poolSummary: any[] = [];
     
@@ -664,11 +493,18 @@ async function setupThreeCurrencyPools() {
       const pool = currencyPools[i];
       console.log(`\n--- ${pool.name} ---`);
       
+      // Debug: Print token mint addresses for verification
+      console.log(`Token A Mint (${pool.tokenA.symbol}): ${pool.tokenA.mint!.toString()}`);
+      console.log(`Token B Mint (${pool.tokenB.symbol}): ${pool.tokenB.mint!.toString()}`);
+      
       // Derive PDAs
       const [poolState] = PublicKey.findProgramAddressSync(
         [Buffer.from("pool"), pool.tokenA.mint!.toBuffer(), pool.tokenB.mint!.toBuffer()],
         programId
       );
+      
+      // Debug: Show expected vs calculated pool state
+      console.log(`Expected Pool State: ${poolState.toString()}`);
       
       const [lpMint] = PublicKey.findProgramAddressSync(
         [Buffer.from("lp_mint"), pool.tokenA.mint!.toBuffer(), pool.tokenB.mint!.toBuffer()],
@@ -680,13 +516,24 @@ async function setupThreeCurrencyPools() {
         programId
       );
 
+      // Derive vault PDAs using the same seeds as in Rust code
+      const [vaultA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault_a"), pool.tokenA.mint!.toBuffer(), pool.tokenB.mint!.toBuffer()],
+        programId
+      );
+      
+      const [vaultB] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault_b"), pool.tokenA.mint!.toBuffer(), pool.tokenB.mint!.toBuffer()],
+        programId
+      );
+
       console.log(`Pool State: ${poolState.toString()}`);
       console.log(`LP Mint: ${lpMint.toString()}`);
       console.log(`Pool Authority: ${poolAuthority.toString()}`);
-      console.log(`Vault A (${pool.tokenA.symbol}): ${pool.vaultA.publicKey.toString()}`);
-      console.log(`Vault B (${pool.tokenB.symbol}): ${pool.vaultB.publicKey.toString()}`);
+      console.log(`Vault A (${pool.tokenA.symbol}): ${vaultA.toString()}`);
+      console.log(`Vault B (${pool.tokenB.symbol}): ${vaultB.toString()}`);
 
-      // Initialize Pool
+      // Initialize Pool with PDA vaults - no signers needed for vaults
       console.log(`Initializing ${pool.name} (Type: ${pool.poolType})...`);
       const tx = await program.methods
         .initializePool(pool.poolType)
@@ -695,21 +542,45 @@ async function setupThreeCurrencyPools() {
           tokenAMint: pool.tokenA.mint!,
           tokenBMint: pool.tokenB.mint!,
           lpMint,
-          tokenAVault: pool.vaultA.publicKey,
-          tokenBVault: pool.vaultB.publicKey,
+          tokenAVault: vaultA,
+          tokenBVault: vaultB,
           poolAuthority,
           payer: deployerKeypair.publicKey,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           rent: SYSVAR_RENT_PUBKEY,
         })
-        .signers([deployerKeypair, pool.vaultA, pool.vaultB])
+        .signers([deployerKeypair])  // Only deployer signs - vaults are PDAs
         .rpc();
 
-      console.log(`✅ ${pool.name} initialized! TX: ${tx}`);
+      console.log(`${pool.name} initialized! TX: ${tx}`);
 
-      // Mint Initial Liquidity
-      console.log(`Minting initial liquidity for ${pool.name}...`);
+      // Create user token accounts for initial liquidity
+      console.log(`Creating user token accounts for initial liquidity...`);
+      
+      const userTokenA = await getOrCreateAssociatedTokenAccount(
+        connection,
+        deployerKeypair,
+        pool.tokenA.mint!,
+        deployerKeypair.publicKey
+      );
+
+      const userTokenB = await getOrCreateAssociatedTokenAccount(
+        connection,
+        deployerKeypair,
+        pool.tokenB.mint!,
+        deployerKeypair.publicKey
+      );
+
+      const userLpToken = await getOrCreateAssociatedTokenAccount(
+        connection,
+        deployerKeypair,
+        lpMint,
+        deployerKeypair.publicKey
+      );
+
+      // Mint tokens to user accounts
+      console.log(`Minting tokens to user accounts...`);
       const amountAWithDecimals = pool.initialLiquidity.amountA * Math.pow(10, 6);
       const amountBWithDecimals = pool.initialLiquidity.amountB * Math.pow(10, 6);
       
@@ -717,7 +588,7 @@ async function setupThreeCurrencyPools() {
         connection,
         deployerKeypair,
         pool.tokenA.mint!,
-        pool.vaultA.publicKey,
+        userTokenA.address,
         deployerKeypair,
         amountAWithDecimals
       );
@@ -726,12 +597,35 @@ async function setupThreeCurrencyPools() {
         connection,
         deployerKeypair,
         pool.tokenB.mint!,
-        pool.vaultB.publicKey,
+        userTokenB.address,
         deployerKeypair,
         amountBWithDecimals
       );
 
-      console.log(`✅ Minted ${pool.initialLiquidity.amountA} ${pool.tokenA.symbol} and ${pool.initialLiquidity.amountB} ${pool.tokenB.symbol}`);
+      // Add initial liquidity to the pool
+      console.log(`Adding initial liquidity to ${pool.name}...`);
+      const addLiquidityTx = await program.methods
+        .addLiquidity(
+          new anchor.BN(amountAWithDecimals),
+          new anchor.BN(amountBWithDecimals)
+        )
+        .accounts({
+          poolState,
+          userTokenA: userTokenA.address,
+          userTokenB: userTokenB.address,
+          userLpToken: userLpToken.address,
+          poolTokenAVault: vaultA,
+          poolTokenBVault: vaultB,
+          lpMint,
+          poolAuthority,
+          userAuthority: deployerKeypair.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([deployerKeypair])
+        .rpc();
+
+      console.log(`Initial liquidity added! TX: ${addLiquidityTx}`);
+      console.log(`Added ${pool.initialLiquidity.amountA} ${pool.tokenA.symbol} and ${pool.initialLiquidity.amountB} ${pool.tokenB.symbol}`);
 
       // Store pool info for summary
       poolSummary.push({
@@ -741,39 +635,39 @@ async function setupThreeCurrencyPools() {
         tokenB: `${pool.tokenB.symbol} (${pool.tokenB.mint!.toString()})`,
         poolState: poolState.toString(),
         lpMint: lpMint.toString(),
-        vaultA: pool.vaultA.publicKey.toString(),
-        vaultB: pool.vaultB.publicKey.toString(),
+        vaultAAddress: vaultA.toString(),
+        vaultBAddress: vaultB.toString(),
         initialLiquidity: `${pool.initialLiquidity.amountA} ${pool.tokenA.symbol} / ${pool.initialLiquidity.amountB} ${pool.tokenB.symbol}`
       });
     }
 
     // 6. Print Final Summary
-    console.log("\n🎉 THREE CURRENCY EXCHANGE POOLS SETUP COMPLETE! 🎉");
+    console.log("\nTHREE CURRENCY EXCHANGE POOLS SETUP COMPLETE!");
     console.log("=====================================================");
-    console.log("\n💱 Available Currency Exchange Routes:");
-    console.log("1. NTD ↔ USD (Stable Pool - 0.05% fee)");
-    console.log("2. USD ↔ YEN (Standard Pool - 0.3% fee)");
-    console.log("3. NTD ↔ YEN (Concentrated Pool - 0.5% fee)");
+    console.log("\nAvailable Currency Exchange Routes:");
+    console.log("1. NTD <-> USD (Stable Pool - 0.05% fee)");
+    console.log("2. USD <-> YEN (Standard Pool - 0.3% fee)");
+    console.log("3. NTD <-> YEN (Concentrated Pool - 0.5% fee)");
     
-    console.log("\n📊 Pool Details:");
+    console.log("\nPool Details:");
     poolSummary.forEach((pool, index) => {
       console.log(`\n${index + 1}. ${pool.name} (${pool.type})`);
       console.log(`   Token A: ${pool.tokenA}`);
       console.log(`   Token B: ${pool.tokenB}`);
       console.log(`   Pool State: ${pool.poolState}`);
       console.log(`   LP Mint: ${pool.lpMint}`);
-      console.log(`   Vault A: ${pool.vaultA}`);
-      console.log(`   Vault B: ${pool.vaultB}`);
+      console.log(`   Vault A: ${pool.vaultAAddress}`);
+      console.log(`   Vault B: ${pool.vaultBAddress}`);
       console.log(`   Initial Liquidity: ${pool.initialLiquidity}`);
     });
 
-    console.log("\n✨ Ready for currency exchange operations!");
+    console.log("\nReady for currency exchange operations!");
     console.log("=====================================================");
 
     process.exit(0);
 
   } catch (error) {
-    console.error("❌ Three-pool setup failed:");
+    console.error("Three-pool setup failed:");
     console.error(error);
     process.exit(1);
   }

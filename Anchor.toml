@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solana_amm_educational_template = "6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2"
+solana_amm_educational_template = "B6WsBQgwpFpQZMYLPt9groFwSjp2nKL7JBoTJASyEYb4"
 
 [programs.devnet]
-solana_amm_educational_template = "6zvNunxSBZdFAbwMUZCQuCYg19owNb6hvDMv3Z5mYML2"
+solana_amm_educational_template = "B6WsBQgwpFpQZMYLPt9groFwSjp2nKL7JBoTJASyEYb4"
 
 [registry]
 url = "https://api.apr.dev"
