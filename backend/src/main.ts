@@ -30,7 +30,7 @@ async function bootstrap() {
   app.enableCors({
   origin: [
       process.env.FRONTEND_URL || 'http://localhost:3000',
-      'https://amm-temp-full-stack.vercel.app',
+      'https://solana-amm-educational-template.vercel.app',
       'http://localhost:3000',
     ],
     credentials: true,

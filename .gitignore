@@ -6,12 +6,12 @@ test-ledger/
 deploy/
 
 # Keypairs (NEVER commit private keys!)
-*.json
 !package.json
 !package-lock.json
 !tsconfig.json
 !.vscode/*.json
 keys/*.json
+/generate
 
 # IDL files (auto-generated)
 *.so
